@@ -2,6 +2,10 @@
 # Description: Scrape Masters leaderboard data every 60 seconds and write to a
 # Google sheet.
 
+# This package could provide a solution that uses chromote to read live pages
+# and also allows for interactivity:
+# https://cran.r-project.org/web/packages/selenider/index.html
+
 # Packages
 library(tidyverse)
 library(rvest)
@@ -36,9 +40,18 @@ while (TRUE) {
     message(paste("Initiating leaderboard refresh at", Sys.time()))
     
     # Leaderboard doesn't seem to be structured as a table. Instead, read in all
-    # data elements as a character string from traditional leaderboard.
-    leader_char <- page_live$html_elements(".data") |>
-        html_text2()
+    # data elements as a character string from traditional leaderboard. If error
+    # crops up then script should continue with old version of leader_char
+    tryCatch(
+        test <- page_live$html_elements(".data") |>
+            html_text2(),
+        error = function(e) {
+            message("Error in html_elements()")
+            print(e) })
+    
+    # Only assign test to leader_char if it has content. If not, use the stored
+    # version of leader_char to complete the current loop,
+    if(length(test) > 0) { leader_char <- test }
     
     # Convert character string to a table by first finding the indices of player
     # names. Player names are considered to be at least two alpha characters,
