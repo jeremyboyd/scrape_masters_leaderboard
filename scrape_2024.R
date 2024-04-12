@@ -85,7 +85,7 @@ while (TRUE) {
     # total score.
     mc_wd <- leader_table %>%
         filter(place %in% c("MC", "WD")) |>
-        select(place, player, R1:R4, total_score)
+        select(place, player, R1:total_score)
     
     # Players who haven't started have a start time with "GMT" in the thru col.
     # All of their columns after thru need to be shifted right.
