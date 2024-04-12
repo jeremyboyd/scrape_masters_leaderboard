@@ -37,7 +37,7 @@ page_live$view()
 while (TRUE) {
     
     # User message
-    message(paste("Initiating leaderboard refresh at", Sys.time()))
+    message("Initiating leaderboard refresh...")
     
     # Leaderboard doesn't seem to be structured as a table. Instead, read in all
     # data elements as a character string from traditional leaderboard. If error
@@ -62,41 +62,44 @@ while (TRUE) {
     name_idx <- which(str_detect(leader_char, "^[A-zÀ-ꭓ]{2}") &
                           !str_detect(leader_char, "^(MC|WD|GMT)"))
     
-    # Based on where player names occur, we can compute the indices for the
-    # start and end of each row in the table.
-    start <- name_idx - 1
-    end <- start + 9
+    # Table with showing where each player's data start and end. The end index
+    # isn't always accurate, but gets cleaned up later.
+    player_idx <- tibble(start = name_idx - 1) |>
+        mutate(end = start + 9)
     
-    # Iterate over start & end indices to extract rows and combine into a table
-    leader_tab <- map2(start, end, function(s, e) {
-        as_tibble(leader_char[s:e]) }) %>%
-        list_cbind() %>%
-        t() %>%
-        as_tibble()
+    # Iterate over start & end indices to extract each player's data & combine
+    # into a list.
+    leader_list <- map2(player_idx$start, player_idx$end, function(s, e) {
+        as_tibble(leader_char[s:e]) })
+    
+    # Iterate over list, transpose data into rows, & rbind
+    leader_table <- map(leader_list, function(player) {
+        t(player[[1]]) |>
+            as_tibble() }) |>
+        list_rbind()
     
     # Add column names
-    colnames(leader_tab) <- c("place", "player", "total_under", "thru", "today_under", "R1", "R2", "R3", "R4", "total_score")
+    colnames(leader_table) <- c("place", "player", "total_under", "thru", "today_under", "R1", "R2", "R3", "R4", "total_score")
     
-    # If the place is either MC or WD then only keep place, player, R1, R2, R3,
-    # and total score.
-    mc_wd <- leader_tab %>%
-        filter(place %in% c("MC", "WD")) %>%
-        select(place, player, R1 = thru, R2 = today_under, R3 = R2,
-               total_score = R3)
+    # If the place is either MC or WD then only keep place, player, R1-R4, &
+    # total score.
+    mc_wd <- leader_table %>%
+        filter(place %in% c("MC", "WD")) |>
+        select(place, player, R1:R4, total_score)
     
-    # Players who haven't started have a start time with "GMT" in the thru col
-    not_started <- leader_tab %>%
+    # Players who haven't started have a start time with "GMT" in the thru col.
+    # All of their columns after thru need to be shifted right.
+    not_started <- leader_table %>%
         filter(!place %in% c("MC", "WD"),
-               str_detect(thru, "GMT")) %>%
-        select(place:total_under, R1 = today_under, R2 = R1, R3 = R2, R4 = R3,
-               total_score = R4) %>%
-        mutate(across(R1:total_score, ~ if_else(.x == "", NA_character_, .x)))
-    
+               str_detect(thru, "MDT")) |>
+        select(place:thru, R1 = today_under, R2 = R1, R3 = R2, R4 = R3,
+               total_score = R4)
+        
     # If the place isn't MC or WD and thru doesn't have "GMT" then player has
     # started today's round.
-    started <- leader_tab %>%
+    started <- leader_table %>%
         filter(!place %in% c("MC", "WD", ""),
-               !str_detect(thru, "GMT"))
+               !str_detect(thru, "MDT"))
     
     # Final leaderboard
     leaderboard <- bind_rows(
@@ -104,16 +107,9 @@ while (TRUE) {
         not_started,
         mc_wd) %>%
         
-        # Convert to numeric
+        # Add a datetime stamp. Google sheets defaults times to GMT, so subtract
+        # 6 to get to mountain.
         mutate(
-            across(c("total_under", "today_under"),
-                   ~ if_else(.x == "E", "0", .x)),
-            across(
-                c("total_under", "today_under", R1:total_score),
-                ~ as.integer(.x)),
-            
-            # Add a datetime stamp. Google sheets converts all datetimes to UTC,
-            # so subtract six hours to show mountain time.
             last_updated = Sys.time() - hours(6),
             
             # Need these columns to properly sort the leaderboard
