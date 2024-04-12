@@ -59,7 +59,7 @@ while (TRUE) {
     # giving tee times for players who haven't started yet). Requiring at least
     # two characters allows us to miss T (used for ties, like tied for third,
     # "T3") and F (finished).
-    name_idx <- which(str_detect(leader_char, "^[ÅA-Za-z]{2}") &
+    name_idx <- which(str_detect(leader_char, "^[A-zÀ-ꭓ]{2}") &
                           !str_detect(leader_char, "^(MC|WD|GMT)"))
     
     # Based on where player names occur, we can compute the indices for the
