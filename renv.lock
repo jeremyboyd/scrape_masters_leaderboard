@@ -283,6 +283,17 @@
       ],
       "Hash": "bb097fccb22d156624fd07cd2894ddb6"
     },
+    "coro": {
+      "Package": "coro",
+      "Version": "1.0.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "rlang"
+      ],
+      "Hash": "4b224d10f3b10ce791c6a4afd50abce3"
+    },
     "cpp11": {
       "Package": "cpp11",
       "Version": "0.4.7",
@@ -1272,6 +1283,26 @@
         "stringr"
       ],
       "Hash": "3838071b66e0c566d55cc26bd6e27bf4"
+    },
+    "selenider": {
+      "Package": "selenider",
+      "Version": "0.3.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "cli",
+        "coro",
+        "curl",
+        "lifecycle",
+        "prettyunits",
+        "processx",
+        "rlang",
+        "utils",
+        "vctrs",
+        "withr"
+      ],
+      "Hash": "4bd85e8fadc44e0203146cfae960974b"
     },
     "stringi": {
       "Package": "stringi",
