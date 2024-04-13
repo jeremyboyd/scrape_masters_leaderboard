@@ -81,12 +81,23 @@ while (TRUE) {
     # Add column names
     colnames(leader_table) <- c("place", "player", "total_under", "thru", "today_under", "R1", "R2", "R3", "R4", "total_score")
     
-    # If the place is either MC or WD then only keep place, player, R1-R4, &
-    # total score.
-    mc_wd <- leader_table %>%
-        filter(place %in% c("MC", "WD")) |>
+    # If place is WD (withdrawn) then set up columns like this
+    wd <- leader_table %>%
+        filter(place == "WD") |>
         select(place, player, R1:total_score)
     
+    # If palce is MC (missed cut) then set up columns like this
+    mc <- leader_table |>
+        filter(place == "MC") |>
+        select(place:total_under, R1 = thru, R2 = today_under,
+               total_score = R3) |>
+        mutate(thru = "MISSED CUT",
+               today_under = "",
+               R3 = "",
+               R4 = "") |>
+        select(place:total_under, thru, today_under, R1, R2, R3, R4,
+               total_score)
+
     # Players who haven't started have a start time with "GMT" in the thru col.
     # All of their columns after thru need to be shifted right.
     not_started <- leader_table %>%
@@ -105,7 +116,8 @@ while (TRUE) {
     leaderboard <- bind_rows(
         started,
         not_started,
-        mc_wd) %>%
+        wd,
+        mc) %>%
         
         # Add a datetime stamp. Google sheets defaults times to GMT, so subtract
         # 6 to get to mountain.
